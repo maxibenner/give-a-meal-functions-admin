@@ -37,3 +37,6 @@ functions/lib/**/*.js.map
 .DS_STORE
 .vscode
 
+# compiled code
+lib/
+
