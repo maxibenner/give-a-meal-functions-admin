@@ -1,0 +1,35 @@
+name: Deploy to Firebase
+
+on:
+  push:
+    branches: [dev, main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      working-directory: ./functions
+
+    strategy:
+      matrix:
+        node-version: [18.x]
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+      - name: install libraries
+        run: npm install
+        working-directory: ${{env.working-directory}}
+      - name: install firebase
+        run: npm i firebase-tools -g
+      - name: Select dev project
+        if: endsWith(github.ref, '/dev')
+        run: firebase use give-a-meal-admin-development --token ${{ secrets.FIREBASE_CI_TOKEN }}
+      - name: Select production project
+        if: endsWith(github.ref, '/main')
+        run: firebase use give-a-meal-admin-production --token ${{ secrets.FIREBASE_CI_TOKEN }}
+      - name: deploy
+        run: firebase deploy --token ${{ secrets.FIREBASE_CI_TOKEN }}
