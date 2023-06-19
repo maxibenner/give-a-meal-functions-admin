@@ -1,49 +1,5 @@
 import * as functions from "firebase-functions";
-import { supabase } from "./init";
 const https = require("node:http");
-
-/**
- * Start timer for claim removal
- */
-export const cancelReservationCallback = functions.https.onRequest(
-  async (req: any, res: any) => {
-    const { donationId, queuePin } = req.body;
-
-    if (queuePin === functions.config().general.queue_pin) {
-      await supabase
-        .from("donations")
-        .update({ claimed_by: null })
-        .eq("id", donationId);
-
-      console.log(`Removed claim from donation ${donationId}`);
-
-      return res.end();
-    } else {
-      console.log("Unable to remove claim. Invalid queue pin.");
-
-      return res.end();
-    }
-  }
-);
-
-/**
- * Create unique string
- * @return {string} Rather unique string
- */
-export function generateRandomString() {
-  let result;
-  let i;
-  let j;
-  result = "";
-  for (j = 0; j < 32; j++) {
-    if (j == 8 || j == 12 || j == 16 || j == 20) result = result + "-";
-    i = Math.floor(Math.random() * 16)
-      .toString(16)
-      .toUpperCase();
-    result = result + i;
-  }
-  return result;
-}
 
 /**
  * Turns snake case objects keys into camel case object keys
@@ -88,7 +44,6 @@ export function keysToCamel(o: any) {
  */
 export async function getBusinessDetailsFromGoogle(placeId: string) {
   const mapsApiKey = functions.config().google_maps.key;
-  console.log("mapsApiKey", mapsApiKey)
 
   const options = {
     hostname: "maps.googleapis.com",
@@ -114,6 +69,7 @@ export async function getBusinessDetailsFromGoogle(placeId: string) {
   const res: any = await detailsPromise;
 
   if (!res) return null;
+  functions.logger.log(res);
 
   // Reduce into usable object
   const addressComponents = res.result.address_components;
