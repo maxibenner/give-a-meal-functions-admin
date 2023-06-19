@@ -1,5 +1,5 @@
 import { HttpsError } from "firebase-functions/v1/auth";
-import { supabase } from "./init";
+import { admin, supabase } from "./init";
 import * as functions from "firebase-functions";
 
 export const getVerifications = functions.https.onCall(
@@ -13,12 +13,27 @@ export const getVerifications = functions.https.onCall(
       );
     }
 
-    const verificationsRes = await supabase.from("verifications").select("*");
+    const verificationsRes: any = await supabase
+      .from("verifications")
+      .select("*");
 
     if (verificationsRes.error) {
       throw new HttpsError("internal", "Error fetching verifications");
     }
 
-    return verificationsRes.data;
+    const verifiedVerifications = [];
+
+    for (let i = 0; i < verificationsRes.data.length; i++) {
+      if (!verificationsRes.data[i].auth_id) {
+        continue;
+      }
+      const user = await admin.auth().getUser(uid);
+      verifiedVerifications.push({
+        ...verificationsRes.data[i],
+        user_email: user.email,
+      });
+    }
+
+    return verifiedVerifications;
   }
 );
