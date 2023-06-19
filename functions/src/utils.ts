@@ -88,6 +88,7 @@ export function keysToCamel(o: any) {
  */
 export async function getBusinessDetailsFromGoogle(placeId: string) {
   const mapsApiKey = functions.config().google_maps.key;
+  console.log("mapsApiKey", mapsApiKey)
 
   const options = {
     hostname: "maps.googleapis.com",
