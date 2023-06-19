@@ -49,22 +49,50 @@ export const getVerification = functions.https.onCall(async (data, context) => {
     );
   }
 
-  const verificationRes: any = await supabase.from("verifications").select("*");
+  // Make sure request is properly formatted and includes required parameters
+  if (!data.verificationId)
+    throw new functions.https.HttpsError(
+      "invalid-argument",
+      "Missing parameter verificationId."
+    );
+
+  const verificationRes: any = await supabase
+    .from("verifications")
+    .select("*")
+    .eq("id", data.verificationId);
 
   if (verificationRes.error) {
     throw new HttpsError("internal", "Error fetching verification");
   }
 
-  if (verificationRes.error) {
-    throw new HttpsError("internal", "Error fetching verifications");
-  }
   if (verificationRes.data.length === 0) {
     throw new HttpsError("internal", "Couldnt find verification");
   }
 
+  const details: any = await getBusinessDetailsFromGoogle(data.placeId);
+
+  if (!details || !details.website)
+    throw new functions.https.HttpsError(
+      "unavailable",
+      "Couldn't find business on Google places API"
+    );
+
   const user = await admin.auth().getUser(uid);
 
   verificationRes.data[0].user_email = user.email;
+
+  // Add business details to response
+  verificationRes.data[0].address = {
+    business_name: details.name,
+    address: details.address.address,
+    street_number: details.address.streetNumber,
+    city: details.address.city,
+    postal_code: details.address.postalCode,
+    state: details.address.state,
+    country: details.address.country,
+    lat: details.location.lat,
+    lon: details.location.lng,
+  };
 
   return verificationRes.data[0];
 });
