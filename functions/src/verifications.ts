@@ -69,7 +69,9 @@ export const getVerification = functions.https.onCall(async (data, context) => {
     throw new HttpsError("internal", "Couldnt find verification");
   }
 
-  const details: any = await getBusinessDetailsFromGoogle(data.placeId);
+  const details: any = await getBusinessDetailsFromGoogle(
+    verificationRes.data[0].place_id
+  );
 
   if (!details || !details.website)
     throw new functions.https.HttpsError(
@@ -94,7 +96,7 @@ export const getVerification = functions.https.onCall(async (data, context) => {
     lon: details.location.lng,
   };
 
-  return verificationRes.data[0];
+  return keysToCamel(verificationRes.data[0]);
 });
 
 export const verifyUserByPhone = functions.https.onCall(
