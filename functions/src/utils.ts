@@ -1,5 +1,5 @@
 import * as functions from "firebase-functions";
-const https = require("node:http");
+const https = require("node:https");
 
 /**
  * Turns snake case objects keys into camel case object keys
@@ -69,7 +69,6 @@ export async function getBusinessDetailsFromGoogle(placeId: string) {
   const res: any = await detailsPromise;
 
   if (!res) return null;
-  functions.logger.log(res);
 
   // Reduce into usable object
   const addressComponents = res.result.address_components;

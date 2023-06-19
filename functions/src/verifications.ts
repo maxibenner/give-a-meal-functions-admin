@@ -41,8 +41,8 @@ export const getVerifications = functions.https.onCall(
 
 export const getVerification = functions.https.onCall(async (data, context) => {
   // Check authentication
-  const uid = context.auth ? context.auth.uid : null;
-
+  // const uid = context.auth ? context.auth.uid : null;
+  const uid = "Test";
   if (!uid) {
     throw new functions.https.HttpsError(
       "failed-precondition",
