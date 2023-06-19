@@ -1,2 +1,6 @@
 export { getCounts } from "./count";
-export { getVerifications } from "./verifications";
+export {
+  getVerifications,
+  getVerification,
+  verifyUserByPhone,
+} from "./verifications";

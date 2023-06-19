@@ -1,6 +1,7 @@
 import { HttpsError } from "firebase-functions/v1/auth";
 import { admin, supabase } from "./init";
 import * as functions from "firebase-functions";
+import { getBusinessDetailsFromGoogle, keysToCamel } from "./utils";
 
 export const getVerifications = functions.https.onCall(
   async (data, context) => {
@@ -35,5 +36,139 @@ export const getVerifications = functions.https.onCall(
     }
 
     return verifiedVerifications;
+  }
+);
+
+export const getVerification = functions.https.onCall(async (data, context) => {
+  // Check authentication
+  const uid = context.auth ? context.auth.uid : null;
+  if (!uid) {
+    throw new functions.https.HttpsError(
+      "failed-precondition",
+      "The function must be called while authenticated."
+    );
+  }
+
+  const verificationRes: any = await supabase.from("verifications").select("*");
+
+  if (verificationRes.error) {
+    throw new HttpsError("internal", "Error fetching verification");
+  }
+
+  if (verificationRes.error) {
+    throw new HttpsError("internal", "Error fetching verifications");
+  }
+  if (verificationRes.data.length === 0) {
+    throw new HttpsError("internal", "Couldnt find verification");
+  }
+
+  const user = await admin.auth().getUser(uid);
+
+  verificationRes.data[0].user_email = user.email;
+
+  return verificationRes.data[0];
+});
+
+export const verifyUserByPhone = functions.https.onCall(
+  async (data, context) => {
+    // Check authentication
+    const uid = context.auth ? context.auth.uid : null;
+    if (!uid) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "The function must be called while authenticated."
+      );
+    }
+
+    // Make sure request is properly formatted and includes required parameters
+    if (!data.placeId)
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing parameter placeId."
+      );
+
+    // Get business details
+    const details: any = await getBusinessDetailsFromGoogle(data.placeId);
+    if (!details || !details.website)
+      throw new functions.https.HttpsError(
+        "unavailable",
+        "Failed to fetch business details."
+      );
+
+    // Insert entries
+    const businessPromise = new Promise((resolve, reject) => {
+      const data = {
+        place_id: details.placeId,
+        business_name: details.name,
+        address: details.address.address,
+        street_number: details.address.streetNumber,
+        city: details.address.city,
+        postal_code: details.address.postalCode,
+        state: details.address.state,
+        country: details.address.country,
+        lat: details.location.lat,
+        lon: details.location.lng,
+      };
+
+      supabase
+        .from("businesses")
+        .insert(data)
+        .select()
+        .limit(1)
+        .single()
+        .then((res) => {
+          if (res.status > 199 && res.status < 300) resolve(res.data);
+          else
+            throw new functions.https.HttpsError(
+              "internal",
+              res.error?.message ?? "Failed to insert business entry."
+            );
+        });
+    });
+
+    const profilePromise = new Promise((resolve, reject) => {
+      const data = {
+        auth_id: context.auth?.uid,
+        email: context.auth?.token.email,
+      };
+      supabase
+        .from("profiles")
+        .insert(data)
+        .select()
+        .limit(1)
+        .single()
+        .then((res) => {
+          if (res.status > 199 && res.status < 300) resolve(res.data);
+          else
+            throw new functions.https.HttpsError(
+              "internal",
+              res.error?.message ?? "Failed to insert profile entry."
+            );
+        });
+    });
+
+    const [businessRes, profileRes] = await Promise.all<[any, any]>([
+      businessPromise,
+      profilePromise,
+    ]);
+
+    const connectionsRes = await supabase
+      .from("business_connections")
+      .insert({
+        connection_type: "admin",
+        business: businessRes.id,
+        profile: profileRes.id,
+      })
+      .select("*, business!inner(*), profile(*)")
+      .limit(1)
+      .single();
+
+    if (connectionsRes.error)
+      throw new functions.https.HttpsError(
+        "internal",
+        connectionsRes.error.message
+      );
+
+    return keysToCamel(connectionsRes.data);
   }
 );
