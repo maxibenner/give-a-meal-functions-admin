@@ -2,5 +2,6 @@ export { getCounts } from "./count";
 export {
   getVerifications,
   getVerification,
-  verifyUserByPhone,
+  acceptBusinessRequest,
+  declineBusinessRequest,
 } from "./verifications";

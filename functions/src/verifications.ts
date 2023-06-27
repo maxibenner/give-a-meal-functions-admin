@@ -100,7 +100,7 @@ export const getVerification = functions.https.onCall(async (data, context) => {
   return keysToCamel(verificationRes.data[0]);
 });
 
-export const verifyUserByPhone = functions.https.onCall(
+export const acceptBusinessRequest = functions.https.onCall(
   async (data, context) => {
     // Check authentication
     const uid = context.auth ? context.auth.uid : null;
@@ -117,6 +117,19 @@ export const verifyUserByPhone = functions.https.onCall(
         "invalid-argument",
         "Missing parameter placeId."
       );
+
+    // Get auth_id from verification
+    const verificationRes: any = await supabase
+      .from("verifications")
+      .select("*")
+      .eq("place_id", data.placeId);
+
+    if (verificationRes.error) {
+      throw new HttpsError("internal", "Error fetching verification");
+    }
+
+    // Get email from auth_id with firebase admin sdk
+    const user = await admin.auth().getUser(verificationRes.data[0].auth_id);
 
     // Get business details
     const details: any = await getBusinessDetailsFromGoogle(data.placeId);
@@ -159,8 +172,8 @@ export const verifyUserByPhone = functions.https.onCall(
 
     const profilePromise = new Promise((resolve, reject) => {
       const data = {
-        auth_id: context.auth?.uid,
-        email: context.auth?.token.email,
+        auth_id: verificationRes.data[0].auth_id,
+        email: user.email,
       };
       supabase
         .from("profiles")
@@ -200,6 +213,54 @@ export const verifyUserByPhone = functions.https.onCall(
         connectionsRes.error.message
       );
 
+    // Remove verification entry
+    const verificationDeleteRes = await supabase
+      .from("verifications")
+      .delete()
+      .eq("place_id", data.placeId)
+      .single();
+
+    if (verificationDeleteRes.error)
+      throw new functions.https.HttpsError(
+        "internal",
+        verificationDeleteRes.error.message
+      );
+
     return keysToCamel(connectionsRes.data);
+  }
+);
+
+export const declineBusinessRequest = functions.https.onCall(
+  async (data, context) => {
+    // Check authentication
+    const uid = context.auth ? context.auth.uid : null;
+    if (!uid) {
+      throw new functions.https.HttpsError(
+        "failed-precondition",
+        "The function must be called while authenticated."
+      );
+    }
+
+    // Make sure request is properly formatted and includes required parameters
+    if (!data.placeId)
+      throw new functions.https.HttpsError(
+        "invalid-argument",
+        "Missing parameter placeId."
+      );
+
+    // Remove verification entry
+    const verificationRes = await supabase
+      .from("verifications")
+      .delete()
+      .eq("place_id", data.placeId)
+      .single();
+
+    if (verificationRes.error)
+      throw new functions.https.HttpsError(
+        "internal",
+        verificationRes.error.message
+      );
+
+    return;
   }
 );
