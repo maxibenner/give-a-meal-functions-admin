@@ -3,6 +3,7 @@ import { admin, supabase } from "./init";
 import * as functions from "firebase-functions";
 import { getBusinessDetailsFromGoogle, keysToCamel } from "./utils";
 
+// Admin + Phone verifications only
 export const getVerifications = functions.https.onCall(
   async (data, context) => {
     // Check authentication
@@ -16,7 +17,9 @@ export const getVerifications = functions.https.onCall(
 
     const verificationsRes: any = await supabase
       .from("verifications")
-      .select("*");
+      .select("*")
+      .eq("verification_mode", "phone")
+      .eq("connection_type", "admin")
 
     if (verificationsRes.error) {
       throw new HttpsError("internal", "Error fetching verifications");
