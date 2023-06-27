@@ -19,7 +19,7 @@ export const getVerifications = functions.https.onCall(
       .from("verifications")
       .select("*")
       .eq("verification_mode", "phone")
-      .eq("connection_type", "admin")
+      .eq("connection_type", "admin");
 
     if (verificationsRes.error) {
       throw new HttpsError("internal", "Error fetching verifications");
@@ -131,9 +131,6 @@ export const acceptBusinessRequest = functions.https.onCall(
       throw new HttpsError("internal", "Error fetching verification");
     }
 
-    // Get email from auth_id with firebase admin sdk
-    const user = await admin.auth().getUser(verificationRes.data[0].auth_id);
-
     // Get business details
     const details: any = await getBusinessDetailsFromGoogle(data.placeId);
     if (!details || !details.website)
@@ -176,7 +173,7 @@ export const acceptBusinessRequest = functions.https.onCall(
     const profilePromise = new Promise((resolve, reject) => {
       const data = {
         auth_id: verificationRes.data[0].auth_id,
-        email: user.email,
+        email: verificationRes.data[0].verification_email,
       };
       supabase
         .from("profiles")
