@@ -265,17 +265,17 @@ export const declineBusinessRequest = functions.https.onCall(
     }
 
     // Make sure request is properly formatted and includes required parameters
-    if (!data.placeId)
+    if (!data.verificationId)
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Missing parameter placeId."
+        "Missing parameter verificationId."
       );
 
     // Remove verification entry
     const verificationRes = await supabase
       .from("verifications")
       .delete()
-      .eq("place_id", data.placeId)
+      .eq("id", data.verificationId)
       .single();
 
     if (verificationRes.error)
