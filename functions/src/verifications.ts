@@ -117,6 +117,13 @@ export const getVerification = functions.https.onCall(async (data, context) => {
   return keysToCamel(verificationRes.data[0]);
 });
 
+/**
+ * Accept a pending admin phone verification
+ * @param {string} verificationId - The id of the verification to accept
+ * @returns {Object} - The connection object
+ * @throws {functions.https.HttpsError} - Throws if the user is not authenticated
+ * @throws {functions.https.HttpsError} - Throws if the request is missing the verificationId parameter
+ */
 export const acceptBusinessRequest = functions.https.onCall(
   async (data, context) => {
     // Check authentication
@@ -129,24 +136,26 @@ export const acceptBusinessRequest = functions.https.onCall(
     }
 
     // Make sure request is properly formatted and includes required parameters
-    if (!data.placeId)
+    if (!data.verificationId)
       throw new functions.https.HttpsError(
         "invalid-argument",
-        "Missing parameter placeId."
+        "Missing parameter verificationId."
       );
 
     // Get auth_id from verification
     const verificationRes: any = await supabase
       .from("verifications")
       .select("*")
-      .eq("place_id", data.placeId);
+      .eq("id", data.verificationId);
 
     if (verificationRes.error) {
       throw new HttpsError("internal", "Error fetching verification");
     }
 
     // Get business details
-    const details: any = await getBusinessDetailsFromGoogle(data.placeId);
+    const details: any = await getBusinessDetailsFromGoogle(
+      verificationRes.data[0].place_id
+    );
     if (!details || !details.website)
       throw new functions.https.HttpsError(
         "unavailable",
@@ -156,7 +165,7 @@ export const acceptBusinessRequest = functions.https.onCall(
     // Insert entries
     const businessPromise = new Promise((resolve, reject) => {
       const data = {
-        place_id: details.placeId,
+        place_id: verificationRes.data[0].auth_id,
         business_name: details.name,
         address: details.address.address,
         street_number: details.address.streetNumber,
