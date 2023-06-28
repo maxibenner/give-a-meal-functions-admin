@@ -3,7 +3,12 @@ import { admin, supabase } from "./init";
 import * as functions from "firebase-functions";
 import { getBusinessDetailsFromGoogle, keysToCamel } from "./utils";
 
-// Admin + Phone verifications only
+/**
+ * Get all pending admin phone verifications
+ * @returns {Array} - An array of pending verifications
+ * @throws {functions.https.HttpsError} - Throws if the user is not authenticated
+ * @throws {functions.https.HttpsError} - Throws if there is an error fetching verifications
+ */
 export const getVerifications = functions.https.onCall(
   async (data, context) => {
     // Check authentication
@@ -42,6 +47,15 @@ export const getVerifications = functions.https.onCall(
   }
 );
 
+/**
+ * Get a specific pending admin phone verification
+ * @param {string} verificationId - The id of the verification to fetch
+ * @returns {Object} - The verification object
+ * @throws {functions.https.HttpsError} - Throws if the user is not authenticated
+ * @throws {functions.https.HttpsError} - Throws if the request is missing the verificationId parameter
+ * @throws {functions.https.HttpsError} - Throws if there is an error fetching the verification
+ * @throws {functions.https.HttpsError} - Throws if there is an error fetching the business from google places API
+ */
 export const getVerification = functions.https.onCall(async (data, context) => {
   // Check authentication
   const uid = context.auth ? context.auth.uid : null;
@@ -217,7 +231,7 @@ export const acceptBusinessRequest = functions.https.onCall(
     const verificationDeleteRes = await supabase
       .from("verifications")
       .delete()
-      .eq("place_id", data.placeId)
+      .eq("id", verificationRes.data[0].id)
       .single();
 
     if (verificationDeleteRes.error)
