@@ -253,6 +253,14 @@ export const acceptBusinessRequest = functions.https.onCall(
   }
 );
 
+/**
+ * Decline a pending admin phone verification
+ * @param {string} verificationId - The id of the verification to decline
+ * @returns {void}
+ * @throws {functions.https.HttpsError} - Throws if the user is not authenticated
+ * @throws {functions.https.HttpsError} - Throws if the request is missing the verificationId parameter
+ * @throws {functions.https.HttpsError} - Throws if the verification entry could not be deleted
+ */
 export const declineBusinessRequest = functions.https.onCall(
   async (data, context) => {
     // Check authentication
