@@ -5,3 +5,4 @@ export {
   acceptBusinessRequest,
   declineBusinessRequest,
 } from "./verifications";
+export { getProfiles } from "./profiles";
