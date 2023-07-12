@@ -1,2 +1,4 @@
 .DS_STORE
 .vscode
+.runtimeconfig.json
+**/.runtimeconfig.json
