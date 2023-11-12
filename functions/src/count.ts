@@ -12,23 +12,23 @@ export const getCounts = functions.https.onCall(async (data, context) => {
     );
   }
 
-  const businessCountRes = await supabase
+  const businessCountRes = supabase
     .from("businesses")
     .select("*", { count: "exact", head: true });
 
-  const verificationCountRes = await supabase
+  const verificationCountRes = supabase
     .from("verifications")
     .select("*", { count: "exact", head: true });
 
-  const profileCountRes = await supabase
+  const profileCountRes = supabase
     .from("profiles")
     .select("*", { count: "exact", head: true });
 
-  const donationCountRes = await supabase
+  const donationCountRes = supabase
     .from("donations")
     .select("*", { count: "exact", head: true });
 
-  const itemCountRes = await supabase
+  const itemCountRes = supabase
     .from("items")
     .select("*", { count: "exact", head: true });
 
