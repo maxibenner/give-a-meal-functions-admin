@@ -1,5 +1,6 @@
 {
   "name": "functions",
+  "version": "1.0.1",
   "scripts": {
     "watch": "tsc -w",
     "lint": "eslint --ext .js,.ts .",
