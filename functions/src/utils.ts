@@ -70,7 +70,10 @@ export async function getBusinessDetailsFromGoogle(placeId: string) {
 
   if (!res) return null;
 
+  console.log(res)
+
   // Reduce into usable object
+  //>    error_message: 'The provided API key is invalid.',
   const addressComponents = res.result.address_components;
   const formattedComponents = addressComponents.reduce(
     (acc: any, component: any) => {
